@@ -14,20 +14,26 @@
 		const queryString = window.location.search; // https://www.sitepoint.com/get-url-parameters-with-javascript/
 		const urlParams = new URLSearchParams(queryString);
 		const stationId = urlParams.get('stationId')
-		console.log(stationId);
-		if (stationId === null) {
-			console.log('stationId missing');
-		}
+		const env = urlParams.get('env')
+		//const url = "custom.url" // set this if you have a private data source
+		console.log('stationId: '+stationId);
 
 		$(document).ready(function() {
-			
+			if (stationId === null) {
+				console.log('stationId missing');
+				$('#log > tbody').append('<tr><td colspan="5" style="text-align: center;">stationId missing</td></tr>');
+				throw new Error('stationId missing');
+			} else if (typeof url === 'undefined') {
+				url = "https://"+env+"-api.genulogd1.com/get-day-data?stationId="+stationId
+			}
+
 			var table = $('#log').DataTable( {
 				"paging": false,
 				"info": false,
 				"fixedHeader": true,
 				"serverSide": false,
 				"ajax": {
-				    "url": "https://staging-api.genulogd1.com/get-day-data?stationId="+stationId,
+				    "url": url,
 				    "dataSrc": function ( json ) {
 						var Items = json.data.Items
 						console.log(Items);
@@ -50,26 +56,33 @@
 						    momentDate.format('lll') :
 							momentDate.format();
                       } },
-					{ "data": "A0" },
+					{ "data": "A0" }, // output value
 					{ "data": "A1",
-					  "render": function ( data, type, row, meta ) {
+					  "render": function ( data, type, row, meta ) { // divide value by 10 and display
                           return parseInt(data)/10;
                       } },
 					{ "data": "A2",
-					  "render": function ( data, type, row, meta ) {
+					  "render": function ( data, type, row, meta ) { // if less then 10, display Full in cell
                           return ((parseInt(data) < 10) ? 'Full' : '');
                       } },
 					{ "data": "D7",
-					  "render": function ( data, type, row, meta ) {
+					  "render": function ( data, type, row, meta ) { // if 0, display Run in cell
                           return ((parseInt(data) == 0) ? 'Run' : '');
                       } },
 				],
-				"order": [[ 0, 'desc' ]]
+				"order": [[ 0, 'desc' ]],
+				"rowCallback": function(row, data, index) {
+            		if(parseInt(data["A0"]) > 40) {
+                		$('td', row).css('background-color', 'red');
+            		} else if(parseInt(data["A0"]) > 38) {
+                		$('td', row).css('background-color', 'yellow');
+					}
+        		}
 			} ); // end var table
 		} );
 		
 	</script>
-
+	<p>Add type, well , refidg</p>
     <table id="log" class="display" style="width:100%">
         <thead>
             <tr>
@@ -79,7 +92,9 @@
                 <th>Batt Full</th>
                 <th>Well Run</th>
             </tr>
-        </thead>
+		</thead>
+		<tbody>
+		</tbody>
         <tfoot>
             <tr>
 				<th>Time</th>
