@@ -13,9 +13,10 @@
 	<script type = "text/javascript">
 		const queryString = window.location.search; // https://www.sitepoint.com/get-url-parameters-with-javascript/
 		const urlParams = new URLSearchParams(queryString);
-		const stationId = urlParams.get('stationId')
-		const env = urlParams.get('env')
+		const stationId = urlParams.get('stationId');
+		const env = urlParams.get('env');
 		//const url = "custom.url" // set this if you have a private data source
+		var message = '';
 		console.log('stationId: '+stationId);
 
 		$(document).ready(function() {
@@ -35,8 +36,12 @@
 				"ajax": {
 				    "url": url,
 				    "dataSrc": function ( json ) {
-						var Items = json.data.Items
+						var Items = json.data.Items;
 						console.log(Items);
+						if ('message' in json) {
+							message = json.message;
+							$("#message").html(message);
+						}
 						var rows = []
 						var j = 0;
 				        for ( var i=0, ien=Items.length; i<ien; i++) {
@@ -56,11 +61,12 @@
 						    momentDate.format('lll') :
 							momentDate.format();
                       } },
-					{ "data": "A0" }, // output value
-					{ "data": "A1",
-					  "render": function ( data, type, row, meta ) { // divide value by 10 and display
-                          return parseInt(data)/10;
-                      } },
+					{ "data": "A0tempF" }, // output value
+					{ "data": "A3volt" }, // output value
+					//{ "data": "A1",
+					//  "render": function ( data, type, row, meta ) { // divide value by 10 and display
+                    //      return parseInt(data)/10;
+                    //  } },
 					{ "data": "A2",
 					  "render": function ( data, type, row, meta ) { // if less then 10, display Full in cell
                           return ((parseInt(data) < 10) ? 'Full' : '');
@@ -72,17 +78,21 @@
 				],
 				"order": [[ 0, 'desc' ]],
 				"rowCallback": function(row, data, index) {
-            		if(parseInt(data["A0"]) > 40) {
+            		if(parseInt(data["A0tempF"]) > 40) {
                 		$('td', row).css('background-color', 'red');
-            		} else if(parseInt(data["A0"]) > 38) {
+            		} else if(parseInt(data["A0tempF"]) > 38) {
                 		$('td', row).css('background-color', 'yellow');
 					}
         		}
 			} ); // end var table
-		} );
+
+		} ); // end ready function
+
 		
 	</script>
-	<p>Add type, well , refidg</p>
+
+	<!-- Add types: well, refidg -->
+	<p id="message"></p>
     <table id="log" class="display" style="width:100%">
         <thead>
             <tr>
@@ -105,6 +115,6 @@
             </tr>
         </tfoot>
     </table>
-    
+    <a href="http://www.GenuLog.com/">GenuLog.com</a>
 </body>
 </html>
