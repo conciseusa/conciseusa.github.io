@@ -4,8 +4,8 @@
 	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
 	<script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-3.5.1.js"></script>
 
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.23/fh-3.1.7/datatables.min.css"/>
-    <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.23/fh-3.1.7/datatables.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.24/fh-3.1.7/datatables.min.css"/>
+    <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.24/fh-3.1.7/datatables.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 </head>
 <body>
@@ -15,17 +15,25 @@
 		const urlParams = new URLSearchParams(queryString);
 		const stationId = urlParams.get('stationId');
 		const env = urlParams.get('env');
-		//const url = "custom.url" // set this if you have a private data source
+		var debug = false;
+		var url = "https://"+env+"-api.genulogd1.com/get-day-data?stationId="+stationId
+
+		if (window.location.href.search("[?&]url=") != -1) {
+			url = urlParams.get('url'); // set this if you have a private data source
+		}
+
+		if ((window.location.href.search("[?&]debug=") != -1) && (urlParams.get('debug') == 'y')) {
+			debug = true; // enable more console log messages
+		}
+
 		var message = '';
 		console.log('stationId: '+stationId);
 
 		$(document).ready(function() {
 			if (stationId === null) {
-				console.log('stationId missing');
+				console.log('Error: stationId missing');
 				$('#log > tbody').append('<tr><td colspan="5" style="text-align: center;">stationId missing</td></tr>');
 				throw new Error('stationId missing');
-			} else if (typeof url === 'undefined') {
-				url = "https://"+env+"-api.genulogd1.com/get-day-data?stationId="+stationId
 			}
 
 			var table = $('#log').DataTable( {
@@ -45,7 +53,9 @@
 						var rows = []
 						var j = 0;
 				        for ( var i=0, ien=Items.length; i<ien; i++) {
-					        console.log(Items[i].Time);
+							if (debug) {
+								console.log(Items[i].Time);
+							}
 					        if (typeof Items[i].Time !== 'undefined') { // filter out any items that do not have a Time
 					            rows[j++] = Items[i]; // reindex so rows data has no index holes
 					        }
@@ -67,14 +77,14 @@
 					//  "render": function ( data, type, row, meta ) { // divide value by 10 and display
                     //      return parseInt(data)/10;
                     //  } },
-					{ "data": "A2",
-					  "render": function ( data, type, row, meta ) { // if less then 10, display Full in cell
-                          return ((parseInt(data) < 10) ? 'Full' : '');
-                      } },
-					{ "data": "D7",
-					  "render": function ( data, type, row, meta ) { // if 0, display Run in cell
-                          return ((parseInt(data) == 0) ? 'Run' : '');
-                      } },
+					//{ "data": "A2",
+					//  "render": function ( data, type, row, meta ) { // if less then 10, display Full in cell
+                    //      return ((parseInt(data) < 10) ? 'Full' : '');
+                    //  } },
+					//{ "data": "D7",
+					//  "render": function ( data, type, row, meta ) { // if 0, display Run in cell
+                    //      return ((parseInt(data) == 0) ? 'Run' : '');
+                    //  } },
 				],
 				"order": [[ 0, 'desc' ]],
 				"rowCallback": function(row, data, index) {
@@ -99,8 +109,8 @@
 				<th>Time</th>
 				<th>Temp</th>
                 <th>Batt V</th>
-                <th>Batt Full</th>
-                <th>Well Run</th>
+                <!-- <th>Batt Full</th> -->
+                <!-- <th>Well Run</th> -->
             </tr>
 		</thead>
 		<tbody>
@@ -110,8 +120,8 @@
 				<th>Time</th>
 				<th>Temp</th>
                 <th>Batt V</th>
-                <th>Batt Full</th>
-                <th>Well Run</th>
+                <!-- <th>Batt Full</th> -->
+                <!-- <th>Well Run</th> -->
             </tr>
         </tfoot>
     </table>
