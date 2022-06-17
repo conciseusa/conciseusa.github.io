@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-3.5.1.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.24/fh-3.1.7/datatables.min.css"/>
+    <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.24/fh-3.1.7/datatables.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+</head>
+<body>
+
+	<script type = "text/javascript">
+		const queryString = window.location.search; // https://www.sitepoint.com/get-url-parameters-with-javascript/
+		const urlParams = new URLSearchParams(queryString);
+		const stationId = urlParams.get('stationId');
+		const env = urlParams.get('env');
+		var debug = false;
+		var url = "https://"+env+"-api.genulogd1.com/get-day-data?stationId="+stationId
+
+		if (window.location.href.search("[?&]url=") != -1) {
+			url = urlParams.get('url'); // set this if you have a private data source
+		}
+
+		if ((window.location.href.search("[?&]debug=") != -1) && (urlParams.get('debug') == 'y')) {
+			debug = true; // enable more console log messages
+		}
+
+		var message = '';
+		console.log('stationId: '+stationId);
+
+		$(document).ready(function() {
+			if (stationId === null) {
+				console.log('Error: stationId missing');
+				$('#log > tbody').append('<tr><td colspan="5" style="text-align: center;">stationId missing</td></tr>');
+				throw new Error('stationId missing');
+			}
+
+			var table = $('#log').DataTable( {
+				"paging": false,
+				"info": false,
+				"fixedHeader": true,
+				"serverSide": false,
+				"ajax": {
+				    "url": url,
+				    "dataSrc": function ( json ) {
+						var Items = json.data.Items;
+						console.log(Items);
+						if ('message' in json) {
+							message = json.message;
+							$("#message").html(message);
+						}
+						var rows = []
+						var j = 0;
+				        for ( var i=0, ien=Items.length; i<ien; i++) {
+							if (debug) {
+								console.log(Items[i].Time);
+							}
+							if (typeof Items[i].Time !== 'undefined') { // filter out any items that do not have a Time
+								if (typeof Items[i].duty_cycle_reducing == 'undefined') {
+									Items[i].duty_cycle_reducing = 'NA';
+									Items[i].tdiff_by_duty_cycle_reducing = 'NA';
+								} else {
+									Items[i].tdiff_by_duty_cycle_reducing = (Items[i].A1tempF - Items[i].A0tempF) / Items[i].duty_cycle_reducing;
+								}
+					            rows[j++] = Items[i]; // reindex so rows data has no index holes
+					        }
+				        }
+				        return rows;
+				    }
+			    },
+				"columns": [
+				    { "data": "Time" ,
+					  "render": function ( data, type, row, meta ) {
+						  var momentDate = moment(data, 'YYYY-MM-DDTHH:mm:ss+-HH:mm:ss');
+                          return type === "display" || type === "filter" ?
+						    momentDate.format('lll') :
+							momentDate.format();
+                      } },
+					{ "data": "A0tempF" }, // output value
+					{ "data": "A1tempF" }, // output value
+					{ "data": "duty_cycle_reducing" }, // output value
+					{ "data": "tdiff_by_duty_cycle_reducing" }, // output value
+					//{ "data": "A1",
+					//  "render": function ( data, type, row, meta ) { // divide value by 10 and display
+                    //      return parseInt(data)/10;
+                    //  } },
+					//{ "data": "A2",
+					//  "render": function ( data, type, row, meta ) { // if less then 10, display Full in cell
+                    //      return ((parseInt(data) < 10) ? 'Full' : '');
+                    //  } },
+					//{ "data": "D7",
+					//  "render": function ( data, type, row, meta ) { // if 0, display Run in cell
+                    //      return ((parseInt(data) == 0) ? 'Run' : '');
+                    //  } },
+				],
+				"order": [[ 0, 'desc' ]],
+				"rowCallback": function(row, data, index) {
+            		if(parseInt(data["A0tempF"]) > 40) {
+                		$('td', row).css('background-color', 'red');
+            		} else if(parseInt(data["A0tempF"]) > 38) {
+                		$('td', row).css('background-color', 'yellow');
+					}
+        		}
+			} ); // end var table
+
+		} ); // end ready function
+
+		
+	</script>
+
+	<!-- Add types: well, refidg -->
+	<p id="message"></p>
+    <table id="log" class="display" style="width:100%">
+        <thead>
+            <tr>
+				<th>Time</th>
+				<th>RTemp</th>
+				<th>ATemp</th>
+				<th>DutyC</th>
+				<th>AT-RT/DutyC</th>
+                <!-- <th>Batt Full</th> -->
+                <!-- <th>Well Run</th> -->
+            </tr>
+		</thead>
+		<tbody>
+		</tbody>
+        <tfoot>
+            <tr>
+				<th>Time</th>
+				<th>RTemp</th>
+				<th>ATemp</th>
+				<th>DutyC</th>
+				<th>AT-RT/DutyC</th>
+                <!-- <th>Batt Full</th> -->
+                <!-- <th>Well Run</th> -->
+            </tr>
+        </tfoot>
+    </table>
+    <a href="http://www.GenuLog.com/">GenuLog.com</a>
+</body>
+</html>
